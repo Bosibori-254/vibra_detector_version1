@@ -1,0 +1,16 @@
+channels:
+  - type: websocket
+    enabled: true
+  - type: webhook
+    enabled: false
+    url: ""
+  - type: email
+    enabled: false
+    recipients: []
+  - type: sms
+    enabled: false
+    recipients: []
+escalation:
+  unack_seconds: 60
+  repeat_seconds: 120
+  max_repeats: 3

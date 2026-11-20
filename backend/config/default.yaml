@@ -1,0 +1,50 @@
+system:
+  site: gulf-north
+  segment: seg-12
+  default_mode: advisory
+  global_kill_switch: false
+  auto_segments: []
+  max_late_seconds: 10
+  max_clock_skew_ms: 5000
+  device_keys:
+    node-03: "device-secret"
+    node-04: "device-secret-2"
+ingestion:
+  expected_interval_s: 0.5
+  missing_after_intervals: 4
+  duplicate_cache_size: 5000
+detection:
+  warmup_samples: 12
+  velocity_zones_mm_s:
+    A: 2.8
+    B: 7.1
+    C: 11.0
+  severity_weights:
+    threshold: 0.35
+    band: 0.25
+    ml: 0.25
+    trend: 0.15
+  debounce:
+    n_of_m: 3
+    window: 5
+  hysteresis:
+    enter: 0.45
+    clear: 0.3
+  severity_levels:
+    warning: 0.55
+    critical: 0.8
+  persistence_s: 1.5
+  band_reference:
+    10_50: 0.18
+    50_150: 0.22
+    150_500: 0.30
+    500_2000: 0.30
+  natural_frequencies_hz:
+    - 187.0
+  state_buckets:
+    flow_m3h: 100.0
+    pressure_kpa: 250.0
+    pump_speed_rpm: 100.0
+  trend_window: 6
+  trend_alert_slope: 0.12
+  ml_contamination: 0.05

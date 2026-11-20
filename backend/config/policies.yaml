@@ -1,0 +1,122 @@
+policies:
+  cavitation:
+    default_mode: advisory
+    auto_segments: []
+    action:
+      type: setpoint
+      target: vfd_speed_rpm
+      protocol: opcua
+      direction: decrease
+      max_step: 75.0
+      min: 1200.0
+      max: 3600.0
+      step_per_severity: 90.0
+      rate_limit_per_min: 2
+      cooldown_s: 45
+      operating_envelope:
+        pressure_kpa: [1800.0, 4200.0]
+        flow_m3h: [300.0, 1100.0]
+        pump_speed_rpm: [1000.0, 3800.0]
+    verification:
+      timeout_s: 20
+      min_improvement_pct: 10
+      rollback_on_timeout: true
+    notifications: [dashboard, email]
+  resonance:
+    default_mode: advisory
+    auto_segments: []
+    action:
+      type: setpoint
+      target: vfd_speed_rpm
+      protocol: opcua
+      direction: shift
+      skip_bands_hz: [[180.0, 195.0]]
+      max_step: 120.0
+      min: 1200.0
+      max: 3600.0
+      step_per_severity: 140.0
+      rate_limit_per_min: 2
+      cooldown_s: 60
+      operating_envelope:
+        pressure_kpa: [1800.0, 4200.0]
+        flow_m3h: [300.0, 1100.0]
+        pump_speed_rpm: [1000.0, 3800.0]
+    verification:
+      timeout_s: 20
+      min_improvement_pct: 10
+      rollback_on_timeout: true
+    notifications: [dashboard, email]
+  water_hammer:
+    default_mode: advisory
+    auto_segments: []
+    action:
+      type: setpoint
+      target: valve_close_rate_pct_s
+      protocol: modbus
+      direction: decrease
+      max_step: 10.0
+      min: 2.0
+      max: 50.0
+      step_per_severity: 12.0
+      rate_limit_per_min: 1
+      cooldown_s: 90
+      operating_envelope:
+        pressure_kpa: [1000.0, 5000.0]
+        flow_m3h: [100.0, 1200.0]
+        pump_speed_rpm: [800.0, 3800.0]
+    verification:
+      timeout_s: 15
+      min_improvement_pct: 15
+      rollback_on_timeout: true
+    notifications: [dashboard, email, sms]
+  loose_support:
+    default_mode: advisory
+    auto_segments: []
+    action:
+      type: work_order
+      description: Inspect pipe supports and anchors
+    verification:
+      timeout_s: 0
+      min_improvement_pct: 0
+      rollback_on_timeout: false
+    notifications: [dashboard]
+  imbalance:
+    default_mode: advisory
+    auto_segments: []
+    action:
+      type: work_order
+      description: Inspect pump/motor alignment and balance
+    verification:
+      timeout_s: 0
+      min_improvement_pct: 0
+      rollback_on_timeout: false
+    notifications: [dashboard]
+  leak:
+    default_mode: advisory
+    auto_segments: []
+    action:
+      type: recommend_isolation
+      description: Critical alarm - human confirmation required before isolation
+    verification:
+      timeout_s: 0
+      min_improvement_pct: 0
+      rollback_on_timeout: false
+    notifications: [dashboard, email, sms]
+  sensor_fault:
+    default_mode: advisory
+    auto_segments: []
+    action:
+      type: none
+      description: Fail-safe - block automation, inspect sensor
+    verification:
+      timeout_s: 0
+      min_improvement_pct: 0
+      rollback_on_timeout: false
+    notifications: [dashboard, email]
+deny_tags:
+  - sis
+  - esd
+  - emergency_shutdown
+  - trip
+  - safe_shutdown
+  - xsv_mainline
