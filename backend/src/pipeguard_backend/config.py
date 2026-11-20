@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -114,6 +115,12 @@ class NotificationConfig(BaseModel):
 class Config(BaseModel):
     """Complete PipeGuard configuration."""
 
+    database_url: str = Field(
+        default_factory=lambda: os.getenv("PIPEGUARD_DATABASE_URL", "sqlite:///./pipeguard.db")
+    )
+    jwt_secret: str = Field(
+        default_factory=lambda: os.getenv("PIPEGUARD_JWT_SECRET", "pipeguard-demo-secret")
+    )
     system: SystemConfig = Field(default_factory=SystemConfig)
     ingestion: IngestionConfig = Field(default_factory=IngestionConfig)
     detection: DetectionConfig = Field(default_factory=DetectionConfig)

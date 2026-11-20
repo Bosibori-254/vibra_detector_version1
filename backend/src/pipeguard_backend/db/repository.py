@@ -196,6 +196,24 @@ class Repository:
                 for row in rows
             ]
 
+    def list_diagnoses(self, limit: int = 50) -> list[dict[str, Any]]:
+        """List recent diagnosis rows as dictionaries."""
+        with self.session_factory() as session:
+            rows = session.query(DiagnosisRow).order_by(DiagnosisRow.id.desc()).limit(limit).all()
+            return [
+                {
+                    "ts": row.ts,
+                    "node_id": row.node_id,
+                    "segment": row.segment,
+                    "cause": row.cause,
+                    "confidence": row.confidence,
+                    "evidence": row.evidence,
+                    "severity": row.severity,
+                    "all_scores": row.all_scores,
+                }
+                for row in rows
+            ]
+
     def insert_action(self, audit: ActionAudit) -> None:
         """Append an immutable audit record."""
         with self.session_factory() as session:
