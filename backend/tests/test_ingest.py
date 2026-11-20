@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import json
 
+<<<<<<< HEAD
 import pytest
+=======
+>>>>>>> 39dc708905440b9b1693bfb8574ef57fdad29e0d
 from conftest import KEY, signed_message
 from pipeguard_sim.messages import make_status_message, sign_message
 
 from pipeguard_backend.config import Config
 from pipeguard_backend.db.repository import Repository
+<<<<<<< HEAD
 from pipeguard_backend.ingest.service import IngestService, MqttBridge
+=======
+from pipeguard_backend.ingest.service import IngestService
+>>>>>>> 39dc708905440b9b1693bfb8574ef57fdad29e0d
 from pipeguard_backend.schemas import FeatureMessage
 
 TOPIC = "pipeguard/gulf-north/seg-12/node-03/features"
@@ -61,6 +68,7 @@ async def test_status_message_updates_node_presence(repository: Repository, conf
     )
     assert await service.handle_topic("pipeguard/status", json.dumps(status).encode()) is None
     assert service.node_online("node-03")
+<<<<<<< HEAD
 
 
 def test_mqtt_bridge_retries_transient_connection(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -107,3 +115,5 @@ def test_mqtt_bridge_retries_transient_connection(monkeypatch: pytest.MonkeyPatc
     assert FakeClient.subscribed
     assert bridge.client is not None
     bridge.stop()
+=======
+>>>>>>> 39dc708905440b9b1693bfb8574ef57fdad29e0d

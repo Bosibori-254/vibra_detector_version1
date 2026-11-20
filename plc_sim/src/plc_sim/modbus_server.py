@@ -11,7 +11,15 @@ from plc_sim.device import REGISTER_MAP, SimulatedPLC
 async def run_modbus_server(device: SimulatedPLC, host: str = "0.0.0.0", port: int = 5020) -> None:
     """Serve device tags as Modbus holding registers until cancelled."""
     try:
+<<<<<<< HEAD
         from pymodbus.datastore import ModbusSequentialDataBlock, ModbusServerContext
+=======
+        from pymodbus.datastore import (
+            ModbusSequentialDataBlock,
+            ModbusServerContext,
+            ModbusSlaveContext,
+        )
+>>>>>>> 39dc708905440b9b1693bfb8574ef57fdad29e0d
         from pymodbus.server import StartAsyncTcpServer
 
         try:

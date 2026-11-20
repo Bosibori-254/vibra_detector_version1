@@ -11,7 +11,11 @@ endif
 
 install:
 	$(PY) -m pip install -e "simulator[dev,mqtt]" -e "backend[dev,opcua]" -e "plc_sim[dev,opcua]"
+<<<<<<< HEAD
 	cd dashboard && npm ci
+=======
+	cd dashboard && npm install
+>>>>>>> 39dc708905440b9b1693bfb8574ef57fdad29e0d
 
 up:
 	$(COMPOSE) up -d --build

@@ -15,8 +15,12 @@ CREATE TABLE IF NOT EXISTS feature_samples (
     features JSONB NOT NULL,
     health JSONB NOT NULL,
     PRIMARY KEY (id, ts),
+<<<<<<< HEAD
     CONSTRAINT uq_message_id UNIQUE (message_id, ts),
     CONSTRAINT uq_node_sequence UNIQUE (node_id, sequence, ts)
+=======
+    CONSTRAINT uq_node_sequence UNIQUE (node_id, sequence)
+>>>>>>> 39dc708905440b9b1693bfb8574ef57fdad29e0d
 );
 SELECT create_hypertable('feature_samples', 'ts', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS idx_feature_node_ts ON feature_samples (node_id, ts DESC);
