@@ -1,0 +1,97 @@
+:root {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #e2e8f0;
+  background: #0b1220;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-width: 320px; }
+
+.app { padding: 16px 24px 40px; max-width: 1600px; margin: 0 auto; }
+
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 18px; background: #111c31; border: 1px solid #1e2f4d; border-radius: 10px;
+}
+.brand { font-weight: 700; font-size: 20px; color: #38bdf8; }
+.site { color: #94a3b8; font-size: 13px; }
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+.role { padding: 3px 10px; border-radius: 12px; background: #1e293b; font-size: 12px; }
+button {
+  background: #1e40af; color: white; border: 0; border-radius: 6px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { filter: brightness(1.15); }
+button.danger { background: #991b1b; }
+button.danger.active { background: #16a34a; }
+button.mini { padding: 3px 8px; font-size: 12px; }
+
+.alarm-banner, .error-banner {
+  margin-top: 12px; padding: 10px 16px; border-radius: 8px; font-weight: 600;
+}
+.alarm-banner { background: #7f1d1d; color: #fee2e2; }
+.error-banner { background: #78350f; color: #fde68a; }
+
+.card {
+  margin-top: 16px; background: #111c31; border: 1px solid #1e2f4d;
+  border-radius: 10px; padding: 16px;
+}
+.card h2 { margin: 0 0 12px; font-size: 16px; text-transform: uppercase; letter-spacing: .06em; color: #93c5fd; }
+.card h3 { font-size: 12px; color: #94a3b8; margin: 4px 0; }
+small { color: #64748b; }
+.count { font-size: 12px; color: #64748b; }
+
+.pipeline-svg { width: 100%; height: 150px; }
+.pipe { stroke: #334155; stroke-width: 18; stroke-linecap: round; }
+.segment { fill: #166534; stroke: #22c55e; cursor: pointer; }
+.segment.yellow { fill: #854d0e; stroke: #facc15; }
+.segment.red { fill: #991b1b; stroke: #ef4444; }
+.segment.orange { fill: #9a3412; stroke: #fb923c; }
+.segment.selected { stroke-width: 3; }
+.segment-group text { fill: #f8fafc; font-size: 13px; pointer-events: none; }
+.legend { display: flex; gap: 18px; font-size: 12px; color: #94a3b8; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+.dot.green { background: #22c55e; } .dot.yellow { background: #facc15; } .dot.red { background: #ef4444; }
+
+.signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.spectrogram { display: grid; grid-template-columns: repeat(32, 1fr); gap: 2px; height: 54px; }
+.spectrogram i { background: linear-gradient(90deg, #0ea5e9, #f97316); border-radius: 1px; }
+
+.bottom-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #1e293b; }
+th { color: #64748b; font-weight: 500; }
+.empty { text-align: center; color: #64748b; padding: 18px; }
+.pill { padding: 2px 8px; border-radius: 10px; font-size: 11px; background: #334155; }
+.pill.critical, .pill.rolled_back, .pill.failed { background: #991b1b; }
+.pill.warning { background: #854d0e; }
+.pill.verified, .pill.executed { background: #166534; }
+
+.device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.device { background: #0f172a; border-radius: 8px; padding: 10px; font-size: 13px; }
+.device-name { font-weight: 600; }
+.status-online { color: #4ade80; font-size: 12px; }
+.status-offline { color: #f87171; font-size: 12px; }
+
+.manual-form { display: grid; gap: 8px; }
+.manual-form label { display: grid; gap: 3px; font-size: 12px; color: #94a3b8; }
+input, select {
+  background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+  border-radius: 6px; padding: 7px; font: inherit;
+}
+.hint { color: #fbbf24; font-size: 12px; }
+.error { color: #f87171; }
+
+.login-panel {
+  max-width: 380px; margin: 12vh auto; padding: 28px; background: #111c31;
+  border: 1px solid #1e2f4d; border-radius: 12px;
+}
+.login-panel h1 { color: #38bdf8; margin: 0; }
+.login-panel form { display: grid; gap: 12px; margin: 20px 0 10px; }
+.login-panel label { display: grid; gap: 4px; font-size: 12px; color: #94a3b8; }
+
+@media (max-width: 900px) {
+  .signal-grid, .bottom-grid { grid-template-columns: 1fr; }
+}
