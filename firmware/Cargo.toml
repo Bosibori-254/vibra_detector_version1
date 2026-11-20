@@ -1,0 +1,23 @@
+[package]
+name = "pipeguard-firmware"
+version = "0.1.0"
+edition = "2021"
+description = "PipeGuard edge node firmware: no_std-friendly DSP and sensor abstraction"
+
+[dependencies]
+serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
+hmac = { version = "0.12", default-features = false }
+sha2 = { version = "0.10", default-features = false }
+hex = { version = "0.4", default-features = false, features = ["alloc"] }
+libm = { version = "0.2", default-features = false }
+rumqttc = { version = "0.24", optional = true }
+
+[features]
+default = ["std"]
+std = ["serde_json/std", "hmac/std", "sha2/std", "hex/std"]
+mqtt = ["std", "dep:rumqttc"]
+
+[profile.release]
+opt-level = "s"
+lto = true
