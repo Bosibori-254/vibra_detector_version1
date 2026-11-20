@@ -50,7 +50,7 @@ class FeatureConfig:
     @property
     def window_samples(self) -> int:
         """Number of samples in one analysis window."""
-        return int(round(self.sample_rate_hz * self.window_seconds))
+        return round(self.sample_rate_hz * self.window_seconds)
 
 
 @dataclass(frozen=True)
@@ -181,7 +181,7 @@ def top_spectral_peaks(
     if len(freqs) < 3 or top_n <= 0:
         return []
     resolution = freqs[1] - freqs[0]
-    distance = max(1, int(round(min_separation_hz / resolution)))
+    distance = max(1, round(min_separation_hz / resolution))
     indices, _ = sp_signal.find_peaks(
         amplitude[1:], distance=distance, prominence=float(np.max(amplitude) * 0.02)
     )

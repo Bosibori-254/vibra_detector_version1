@@ -7,10 +7,10 @@ policies:
       target: vfd_speed_rpm
       protocol: opcua
       direction: decrease
-      max_step: 75.0
+      max_step: 120.0
       min: 1200.0
       max: 3600.0
-      step_per_severity: 90.0
+      step_per_severity: 150.0
       rate_limit_per_min: 2
       cooldown_s: 45
       operating_envelope:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 from pipeguard_backend.config import Config
 from pipeguard_backend.schemas import ActionMode, Cause, GateResult, OperatingState

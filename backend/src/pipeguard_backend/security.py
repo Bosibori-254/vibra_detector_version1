@@ -7,7 +7,8 @@ import hashlib
 import hmac
 import json
 import time
-from typing import Any
+from collections.abc import Callable
+from typing import Any, cast
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -82,12 +83,12 @@ def decode_jwt(token: str, secret: str) -> dict[str, Any]:
         claims = json.loads(_b64url_decode(claims_part))
         if int(claims.get("exp", 0)) < time.time():
             raise ValueError("token expired")
-        return claims
+        return cast(dict[str, Any], claims)
     except (ValueError, KeyError, json.JSONDecodeError) as exc:
         raise ValueError("invalid token") from exc
 
 
-def require_role(required: str, secret: str):
+def require_role(required: str, secret: str) -> Callable[[str | None], dict[str, Any]]:
     """FastAPI dependency factory enforcing a minimum role level."""
     allowed_level = ROLE_LEVELS[required]
 

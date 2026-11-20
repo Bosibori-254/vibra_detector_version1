@@ -57,7 +57,7 @@ verification → incident report in `docs/reports/incidents/`.
 |---|---|
 | `make up` / `make down` | Start/stop the Docker Compose stack |
 | `make test` | Run all Python unit tests |
-| `make lint` | ruff, mypy, eslint, TypeScript build, Rust image build |
+| `make lint` | ruff, mypy, eslint, TypeScript build, Rust Clippy/tests/build |
 | `make sim` | Generate a 60 s fault scenario to `features.jsonl` |
 | `make demo` | Run the end-to-end in-process demo scenario |
 | `make eval` | Generate the diagnosis confusion-matrix report |
@@ -83,7 +83,7 @@ scripts/    End-to-end demo
   (kill switch, SIS/ESD deny-list, bounds, step, rate, cooldown, envelope,
   rollback, fail-safe)**, alarms and reports.
 - Rust unit tests cover the DSP and simulator core; run with `make firmware-test`.
-- `make lint` runs ruff + mypy + eslint + `tsc` + Rust container build.
+- `make lint` runs ruff + mypy + eslint + `tsc` + Rust Clippy/tests/build.
 - Diagnosis accuracy on simulated faults is reported by `make eval` into
   `docs/reports/`.
 

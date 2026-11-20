@@ -9,7 +9,8 @@ from typing import Any
 from pipeguard_backend.actuation.adapters import DeviceRegistry
 from pipeguard_backend.actuation.controller import ActuationController
 from pipeguard_backend.alarms.manager import AlarmManager
-from pipeguard_backend.api.ws import ConnectionManager, manager as websocket_manager
+from pipeguard_backend.api.ws import ConnectionManager
+from pipeguard_backend.api.ws import manager as websocket_manager
 from pipeguard_backend.config import Config, load_config
 from pipeguard_backend.db.repository import Repository, create_database
 from pipeguard_backend.detection.detector import Detector

@@ -46,7 +46,7 @@ class NotificationHub:
             request = urllib.request.Request(
                 url, data=payload, headers={"Content-Type": "application/json"}, method="POST"
             )
-            with urllib.request.urlopen(request, timeout=5) as response:  # noqa: S310
+            with urllib.request.urlopen(request, timeout=5) as response:
                 logger.debug("webhook response %s", response.status)
 
         try:

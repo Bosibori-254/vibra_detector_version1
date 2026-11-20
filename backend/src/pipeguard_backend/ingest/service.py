@@ -6,6 +6,7 @@ import asyncio
 import json
 import time
 from collections import deque
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import Any
 
@@ -79,7 +80,7 @@ class IngestService:
     def _is_late(self, message: FeatureMessage) -> bool:
         """Flag messages whose ISO timestamp is older than the lateness budget."""
         try:
-            parsed = datetime.fromisoformat(message.timestamp.replace("Z", "+00:00"))
+            parsed = datetime.fromisoformat(message.timestamp)
         except ValueError:
             return False
         age = time.time() - parsed.timestamp()
@@ -100,12 +101,18 @@ class MqttBridge:
         broker: str = "localhost",
         port: int = 1883,
         topic_prefix: str = "pipeguard/#",
+        username: str = "",
+        password: str = "",
+        handler: Callable[[str, bytes], Awaitable[Any]] | None = None,
     ) -> None:
         """Initialize the bridge without connecting."""
         self.service = service
         self.broker = broker
         self.port = port
         self.topic_prefix = topic_prefix
+        self.username = username
+        self.password = password
+        self.handler = handler or service.handle_topic
         self.queue: asyncio.Queue[tuple[str, bytes]] = asyncio.Queue()
         self.client: Any | None = None
 
@@ -117,7 +124,12 @@ class MqttBridge:
         """Connect and subscribe (blocking network setup)."""
         import paho.mqtt.client as mqtt  # imported lazily for testability
 
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="pipeguard-backend")
+        client = mqtt.Client(
+            mqtt.CallbackAPIVersion.VERSION2,  # type: ignore[attr-defined]
+            client_id="pipeguard-backend",
+        )
+        if self.username:
+            client.username_pw_set(self.username, self.password)
         client.on_message = self.on_message
         client.connect(self.broker, self.port, keepalive=60)
         client.subscribe(self.topic_prefix, qos=1)
@@ -135,4 +147,4 @@ class MqttBridge:
         """Consume queued messages until cancelled."""
         while True:
             topic, payload = await self.queue.get()
-            await self.service.handle_topic(topic, payload)
+            await self.handler(topic, payload)

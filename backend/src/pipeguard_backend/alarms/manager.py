@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from pipeguard_backend.config import Config
@@ -22,7 +22,7 @@ from pipeguard_backend.schemas import (
 
 def _now() -> str:
     """Return a UTC ISO timestamp."""
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 class AlarmManager:
@@ -104,7 +104,7 @@ class AlarmManager:
         if alarm is None:
             return None
         alarm.state = AlarmState.SHELVED
-        alarm.shelved_until = (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
+        alarm.shelved_until = (datetime.now(UTC) + timedelta(seconds=seconds)).isoformat()
         alarm.updated_at = _now()
         self.repository.upsert_alarm(alarm)
         await self._emit(alarm, "shelved")
@@ -137,11 +137,11 @@ class AlarmManager:
         """Check escalation timers for unacknowledged alarms."""
         unack = float(self.config.notifications.escalation.get("unack_seconds", 60))
         max_repeats = int(self.config.notifications.escalation.get("max_repeats", 3))
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for alarm in list(self.alarms.values()):
             if alarm.state is not AlarmState.ACTIVE:
                 continue
-            created = datetime.fromisoformat(alarm.created_at.replace("Z", "+00:00"))
+            created = datetime.fromisoformat(alarm.created_at)
             elapsed = (now - created).total_seconds()
             if elapsed >= unack * (alarm.escalation_count + 1) and alarm.escalation_count < max_repeats:
                 await self.escalate(alarm.alarm_id, "unacknowledged timer")

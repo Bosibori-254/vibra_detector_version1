@@ -1,0 +1,69 @@
+{
+  "matrix": {
+    "normal": {
+      "normal": 0,
+      "cavitation": 0,
+      "resonance": 0,
+      "water_hammer": 0,
+      "loose_support": 0,
+      "leak": 0,
+      "imbalance": 0
+    },
+    "cavitation": {
+      "normal": 0,
+      "cavitation": 12,
+      "resonance": 0,
+      "water_hammer": 0,
+      "loose_support": 0,
+      "leak": 0,
+      "imbalance": 0
+    },
+    "resonance": {
+      "normal": 0,
+      "cavitation": 0,
+      "resonance": 12,
+      "water_hammer": 0,
+      "loose_support": 0,
+      "leak": 0,
+      "imbalance": 0
+    },
+    "water_hammer": {
+      "normal": 0,
+      "cavitation": 0,
+      "resonance": 0,
+      "water_hammer": 12,
+      "loose_support": 0,
+      "leak": 0,
+      "imbalance": 0
+    },
+    "loose_support": {
+      "normal": 0,
+      "cavitation": 0,
+      "resonance": 0,
+      "water_hammer": 0,
+      "loose_support": 12,
+      "leak": 0,
+      "imbalance": 0
+    },
+    "leak": {
+      "normal": 0,
+      "cavitation": 0,
+      "resonance": 0,
+      "water_hammer": 0,
+      "loose_support": 0,
+      "leak": 12,
+      "imbalance": 0
+    },
+    "imbalance": {
+      "normal": 0,
+      "cavitation": 0,
+      "resonance": 0,
+      "water_hammer": 0,
+      "loose_support": 0,
+      "leak": 0,
+      "imbalance": 12
+    }
+  },
+  "cases": 72,
+  "accuracy": 1.0
+}

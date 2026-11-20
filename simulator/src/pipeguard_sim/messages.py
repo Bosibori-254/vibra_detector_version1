@@ -7,7 +7,7 @@ import hmac
 import json
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pipeguard_sim.dsp import Features
 from pipeguard_sim.signals import OperatingState
@@ -18,7 +18,7 @@ SIGNATURE_PREFIX = "hmac-sha256="
 
 def utc_now() -> str:
     """Return the current UTC time as an ISO-8601 string."""
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def canonical_json(payload: dict[str, object]) -> str:

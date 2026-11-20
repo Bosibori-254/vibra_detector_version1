@@ -69,6 +69,7 @@ class SimulationStep:
 
     message: dict[str, object]
     features: Features
+    sequence: int
     waveform_mps2: np.ndarray
     fault: FaultType
     severity: float
@@ -213,6 +214,7 @@ class PipelineSimulator:
         step = SimulationStep(
             message=message,
             features=features,
+            sequence=self.sequence,
             waveform_mps2=result.accel_mps2,
             fault=window.fault,
             severity=window.severity,

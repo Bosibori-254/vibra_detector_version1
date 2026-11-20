@@ -10,7 +10,7 @@ endif
 .PHONY: up down test lint sim demo eval firmware-test install clean
 
 install:
-	$(PY) -m pip install -e simulator[dev,mqtt] -e backend[dev,opcua] -e plc_sim[dev,opcua]
+	$(PY) -m pip install -e "simulator[dev,mqtt]" -e "backend[dev,opcua]" -e "plc_sim[dev,opcua]"
 	cd dashboard && npm install
 
 up:

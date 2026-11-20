@@ -4,7 +4,7 @@
 
 - [x] Architecture and topic/schema contract
 - [x] Deterministic multi-fault simulator (Python) and signed messages
-- [x] Edge firmware core in Rust (`no_std`-friendly, SignalTrait/simulator/DSP/HMAC)
+- [x] Edge firmware core in Rust (`no_std`-friendly, SensorTrait/simulator/DSP/HMAC)
 - [x] HMAC ingestion with dedupe, lateness/drift handling and baseline learning
 - [x] Four detection layers + debounce/hysteresis
 - [x] Evidence-based diagnosis with confusion-matrix evaluation utility

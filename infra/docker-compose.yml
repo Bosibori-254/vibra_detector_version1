@@ -71,7 +71,7 @@ services:
       context: ..
       dockerfile: infra/simulator.Dockerfile
     container_name: pipeguard-simulator
-    command: ["--scenario", "all", "--duration", "60", "--mqtt", "--broker", "mosquitto", "--pace"]
+    command: ["--scenario", "all", "--duration", "60", "--mqtt", "--broker", "mosquitto", "--key", "device-secret", "--pace"]
     depends_on:
       - mosquitto
       - backend

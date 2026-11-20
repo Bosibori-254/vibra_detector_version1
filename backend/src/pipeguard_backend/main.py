@@ -37,7 +37,13 @@ def main() -> None:
     app.state.pipeline = pipeline
 
     if args.mqtt or os.getenv("PIPEGUARD_MQTT") == "1":
-        bridge = MqttBridge(pipeline.ingest, broker=args.broker)
+        bridge = MqttBridge(
+            pipeline.ingest,
+            broker=os.getenv("MQTT_BROKER", args.broker),
+            username=os.getenv("PIPEGUARD_MQTT_USER", ""),
+            password=os.getenv("PIPEGUARD_MQTT_PASSWORD", ""),
+            handler=pipeline.handle_message,
+        )
 
         @app.on_event("startup")
         async def start_bridge() -> None:

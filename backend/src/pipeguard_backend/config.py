@@ -46,7 +46,7 @@ class DetectionConfig(BaseModel):
     severity_weights: dict[str, float] = Field(
         default_factory=lambda: {"threshold": 0.35, "band": 0.25, "ml": 0.25, "trend": 0.15}
     )
-    debounce: dict[str, float] = Field(default_factory=lambda: {"n_of_m": 3, "window": 5})
+    debounce: dict[str, float] = Field(default_factory=lambda: {"n_of_m": 3.0, "window": 5.0})
     hysteresis: dict[str, float] = Field(default_factory=lambda: {"enter": 0.45, "clear": 0.3})
     severity_levels: dict[str, float] = Field(
         default_factory=lambda: {"warning": 0.55, "critical": 0.8}
@@ -108,7 +108,7 @@ class NotificationConfig(BaseModel):
 
     channels: list[dict[str, Any]] = Field(default_factory=list)
     escalation: dict[str, float] = Field(
-        default_factory=lambda: {"unack_seconds": 60, "repeat_seconds": 120, "max_repeats": 3}
+        default_factory=lambda: {"unack_seconds": 60.0, "repeat_seconds": 120.0, "max_repeats": 3.0}
     )
 
 
@@ -135,7 +135,7 @@ def _read_yaml(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         data = yaml.safe_load(handle) or {}
     if not isinstance(data, dict):
-        raise ValueError(f"configuration file must contain a mapping: {path}")
+        raise TypeError(f"configuration file must contain a mapping: {path}")
     return data
 
 

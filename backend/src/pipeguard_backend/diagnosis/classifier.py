@@ -48,6 +48,7 @@ class DiagnosisEngine:
         expected_kurtosis = float(baseline.get("kurtosis_mean", 1.0)) if baseline else 1.0
         expected_crest = float(baseline.get("crest_mean", 3.0)) if baseline else 3.0
         high_band = float(bands.get("500_2000", 0.0))
+        mid_band = float(bands.get("150_500", 0.0))
         low_band = float(bands.get("10_50", 0.0))
         ref_high = float(self.config.detection.band_reference.get("500_2000", 0.3))
 
@@ -66,14 +67,15 @@ class DiagnosisEngine:
                 )
             )
 
-        # Cavitation: high-frequency broadband energy plus suction pressure drop.
+        # Cavitation: high-frequency energy must dominate the mid band, unlike a leak.
         high_ratio = _ratio(high_band, ref_high)
+        high_dominance = min(high_band / max(mid_band, 0.02) / 5.0, 1.0)
+        high_contribution = 0.6 * min(high_ratio / 2.0, 1.0) * high_dominance
         pressure_drop = max(expected_pressure - message.operating_state.pressure_kpa, 0.0)
-        cav_score = 0.6 * min(high_ratio / 2.0, 1.0) + 0.4 * min(pressure_drop / 400.0, 1.0)
         if features.velocity_rms_mm_s > expected_velocity > 0:
-            cav_score += 0.1
+            high_contribution = min(high_contribution + 0.1, 0.6)
         add(Cause.CAVITATION, "band_500_2000", high_band, ref_high, 0.6,
-            0.6 * min(high_ratio / 2.0, 1.0), "broadband high-frequency energy")
+            high_contribution, "high-frequency energy dominates the mid band")
         add(Cause.CAVITATION, "pressure_drop_kpa", pressure_drop, 400.0, 0.4,
             0.4 * min(pressure_drop / 400.0, 1.0))
 
@@ -92,7 +94,6 @@ class DiagnosisEngine:
         # Water hammer: impulsive transient and pressure surge.
         crest_ratio = _ratio(features.crest_factor, max(expected_crest, 3.0))
         surge = max(message.operating_state.pressure_kpa - expected_pressure, 0.0)
-        hammer_score = 0.55 * min(crest_ratio / 2.0, 1.0) + 0.45 * min(surge / 600.0, 1.0)
         add(Cause.WATER_HAMMER, "crest_factor", features.crest_factor, expected_crest, 0.55,
             0.55 * min(crest_ratio / 2.0, 1.0))
         add(Cause.WATER_HAMMER, "pressure_surge_kpa", surge, 600.0, 0.45,
@@ -101,15 +102,14 @@ class DiagnosisEngine:
         # Loose support: impulsive, low-frequency, high kurtosis.
         kurt_ratio = _ratio(features.kurtosis, max(expected_kurtosis, 1.0))
         low_ratio = _ratio(low_band, 0.2)
-        loose_score = 0.65 * min(kurt_ratio / 4.0, 1.0) + 0.35 * min(low_ratio / 2.0, 1.0)
         add(Cause.LOOSE_SUPPORT, "kurtosis", features.kurtosis, expected_kurtosis, 0.65,
             0.65 * min(kurt_ratio / 4.0, 1.0), "impact-like impulses")
         add(Cause.LOOSE_SUPPORT, "band_10_50", low_band, 0.2, 0.35,
             0.35 * min(low_ratio / 2.0, 1.0))
 
-        # Leak / third-party interference: localized broadband rise.
+        # Leak / third-party interference: mid and high bands rise together.
         broadband = float(np.mean(list(bands.values())))
-        leak_score = min(_ratio(broadband, 0.25) / 2.5, 1.0)
+        broadband_balance = min(mid_band / max(high_band, 0.02) / 0.5, 1.0)
         location = None
         if arrival_times and len(arrival_times) >= 2:
             times = sorted(arrival_times.items(), key=lambda item: item[1])
@@ -119,9 +119,11 @@ class DiagnosisEngine:
                 "delta_s": round(times[-1][1] - times[0][1], 4),
                 "method": "time_of_arrival",
             }
-            leak_score = min(leak_score + 0.2, 1.0)
         add(Cause.LEAK, "broadband_mean", broadband, 0.25, 0.7,
-            min(_ratio(broadband, 0.25) / 2.5, 1.0), "localized broadband energy")
+            0.7 * min(_ratio(broadband, 0.25) / 2.5, 1.0) * broadband_balance,
+            "localized broadband energy")
+        add(Cause.LEAK, "band_150_500", mid_band, 0.2, 0.3,
+            0.3 * min(_ratio(mid_band, 0.2) / 2.0, 1.0), "sustained mid-band energy")
         if pressure_drop > 0:
             add(Cause.LEAK, "pressure_drop_kpa", pressure_drop, 250.0, 0.3,
                 0.3 * min(pressure_drop / 250.0, 1.0))
@@ -136,7 +138,6 @@ class DiagnosisEngine:
             (p.amplitude_mps2 for p in features.fft_peaks if abs(p.hz - 2 * run_hz) < 7.0),
             default=0.0,
         )
-        harmonic_score = min(harmonic_1 / 1.5, 1.0) * 0.6 + min(harmonic_2 / 1.0, 1.0) * 0.4
         add(Cause.IMBALANCE, "harmonic_1x", harmonic_1, 1.5, 0.6, 0.6 * min(harmonic_1 / 1.5, 1.0))
         add(Cause.IMBALANCE, "harmonic_2x", harmonic_2, 1.0, 0.4, 0.4 * min(harmonic_2 / 1.0, 1.0))
 
@@ -163,11 +164,18 @@ class DiagnosisEngine:
         if sensor_score >= 0.7:
             cause, confidence = Cause.SENSOR_FAULT, min(0.7 + sensor_score * 0.3, 0.99)
         else:
-            ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+            # A raised alarm must not be explained away by "normal" just because
+            # the layered score is moderate; only rank NORMAL for quiet windows.
+            candidates = {
+                key: value
+                for key, value in scores.items()
+                if key != Cause.NORMAL.value or detection.severity is Severity.NORMAL
+            }
+            ranked = sorted(candidates.items(), key=lambda item: item[1], reverse=True)
             best, best_score = ranked[0]
             second = ranked[1][1] if len(ranked) > 1 else 0.0
             cause = Cause(best)
-            if best_score < 0.25:
+            if detection.severity is Severity.NORMAL and best_score < 0.25:
                 cause, best_score = Cause.NORMAL, scores[Cause.NORMAL.value]
             margin = max(best_score - second, 0.0)
             confidence = float(np.clip(0.45 + 0.35 * best_score + 0.4 * margin, 0.0, 0.99))

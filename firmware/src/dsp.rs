@@ -26,7 +26,14 @@ pub fn kurtosis(samples: &[f32]) -> f32 {
     let mean = samples.iter().sum::<f32>() / samples.len() as f32;
     let m2 = samples.iter().map(|v| (v - mean) * (v - mean)).sum::<f32>() / samples.len() as f32;
     if m2 < 1e-9 { return 0.0; }
-    let m4 = samples.iter().map(|v| (v - mean).powi(4)).sum::<f32>() / samples.len() as f32;
+    let m4 = samples
+        .iter()
+        .map(|v| {
+            let delta = v - mean;
+            delta * delta * delta * delta
+        })
+        .sum::<f32>()
+        / samples.len() as f32;
     m4 / (m2 * m2) - 3.0
 }
 
@@ -52,11 +59,10 @@ pub fn goertzel(samples: &[f32], sample_rate: u32, frequency: f32) -> f32 {
     if samples.is_empty() || frequency <= 0.0 { return 0.0; }
     let w = 2.0 * core::f32::consts::PI * frequency / sample_rate as f32;
     let coeff = 2.0 * libm::cosf(w);
-    let mut s0 = 0.0_f32;
     let mut s1 = 0.0_f32;
     let mut s2 = 0.0_f32;
     for sample in samples {
-        s0 = *sample + coeff * s1 - s2;
+        let s0 = *sample + coeff * s1 - s2;
         s2 = s1;
         s1 = s0;
     }
@@ -75,7 +81,8 @@ pub fn band_energies(
         let mut energy = 0.0_f32;
         for step in 0..4 {
             let freq = low + (high - low) * (step as f32 + 0.5) / 4.0;
-            energy += goertzel(samples, sample_rate, freq).powi(2);
+            let magnitude = goertzel(samples, sample_rate, freq);
+            energy += magnitude * magnitude;
         }
         energies.push((low, high, energy));
         total += energy;
@@ -115,7 +122,8 @@ mod tests {
         assert!((rms(&values) - 0.707).abs() < 0.01);
         assert!((peak(&values) - 1.0).abs() < 0.01);
         assert!((crest_factor(&values) - 1.414).abs() < 0.02);
-        assert!(kurtosis(&values).abs() < 0.1);
+        // A sinusoid has theoretical excess kurtosis of -1.5.
+        assert!((kurtosis(&values) + 1.5).abs() < 0.1);
     }
 
     #[test]

@@ -18,14 +18,15 @@ ROOT = Path(__file__).resolve().parents[1]
 for package in ("simulator", "backend", "plc_sim"):
     sys.path.insert(0, str(ROOT / package / "src"))
 
-from pipeguard_backend.config import load_config  # noqa: E402
-from pipeguard_backend.db.repository import Repository, create_database  # noqa: E402
-from pipeguard_backend.pipeline import Pipeline  # noqa: E402
-from pipeguard_backend.actuation.adapters import DeviceRegistry, SimulatedAdapter  # noqa: E402
-from pipeguard_backend.schemas import Cause, Severity  # noqa: E402
-from pipeguard_sim.messages import sign_message  # noqa: E402
-from pipeguard_sim.scenario import FaultWindow, PipelineSimulator, SimulatorConfig  # noqa: E402
-from plc_sim.device import SimulatedPLC  # noqa: E402
+from pipeguard_backend.actuation.adapters import DeviceRegistry, SimulatedAdapter
+from pipeguard_backend.config import load_config
+from pipeguard_backend.db.repository import Repository, create_database
+from pipeguard_backend.pipeline import Pipeline
+from pipeguard_backend.schemas import Cause, Severity
+from pipeguard_sim.messages import sign_message
+from pipeguard_sim.scenario import FaultWindow, PipelineSimulator, SimulatorConfig
+from pipeguard_sim.signals import FaultType
+from plc_sim.device import SimulatedPLC
 
 
 async def run() -> int:
@@ -36,10 +37,12 @@ async def run() -> int:
     policy.verification.min_improvement_pct = 8.0
     config.system.auto_segments = []
     policy.auto_segments = []
+    # The in-process demo has no OPC UA server; use the simulated device adapter.
+    policy.action.protocol = "simulated"
 
     plc = SimulatedPLC()
     adapter = SimulatedAdapter(plc)
-    _, factory = create_database("sqlite://")
+    engine, factory = create_database("sqlite://")
     repository = Repository(factory)
     pipeline = Pipeline(
         config,
@@ -52,7 +55,7 @@ async def run() -> int:
         SimulatorConfig(
             duration_s=22.0,
             window_seconds=0.5,
-            schedule=(FaultWindow(0.0), FaultWindow(4.0, Cause.CAVITATION, 0.85)),
+            schedule=(FaultWindow(0.0), FaultWindow(4.0, FaultType.CAVITATION, 0.85)),
             signing_key=key,
         )
     )
@@ -67,20 +70,25 @@ async def run() -> int:
     latest_features: dict[str, Any] = {}
 
     for step in simulator.run():
-        if step.fault is Cause.CAVITATION and not fault_announced:
+        if step.fault is FaultType.CAVITATION and not fault_announced:
             fault_announced = True
             plc.set_fault("cavitation", 0.85)
             cavitation_index = plc.vibration_index()
             print(f"PHASE 2: cavitation injected (vibration index {cavitation_index:.3f})")
+
+        # Mirror the simulated PLC response into the telemetry amplitudes so the
+        # backend can verify that its bounded action improved the vibration.
         factor = (
             plc.vibration_index() / cavitation_index
-            if fault_announced and plc.vibration_index() > 0
+            if fault_announced and cavitation_index > 0
             else 1.0
         )
         message = dict(step.message)
         features = dict(message["features"])
-        for axis, value in dict(features["accel_rms_mps2"]).items():
-            features["accel_rms_mps2"][axis] = value * factor
+        features["accel_rms_mps2"] = {
+            axis: value * factor
+            for axis, value in dict(features["accel_rms_mps2"]).items()
+        }
         features["velocity_rms_mm_s"] = float(features["velocity_rms_mm_s"]) * factor
         features["peak_mps2"] = float(features["peak_mps2"]) * factor
         features["fft_peaks"] = [
@@ -93,7 +101,8 @@ async def run() -> int:
 
         started = time.perf_counter()
         result = await pipeline.handle_message(
-            "pipeguard/gulf-north/seg-12/node-03/features", json.dumps(message).encode("utf-8")
+            "pipeguard/gulf-north/seg-12/node-03/features",
+            json.dumps(message).encode("utf-8"),
         )
         elapsed_ms = (time.perf_counter() - started) * 1000.0
         if not result or result.get("type") != "diagnosis":
@@ -119,7 +128,7 @@ async def run() -> int:
             action_latency_ms = elapsed_ms
             print(
                 f"PHASE 4: VFD {audit['before']:.0f} -> {audit['after']:.0f} rpm "
-                f"(bounded, audited)"
+                "(bounded, audited)"
             )
             print("PHASE 5: verifying effect and waiting for recovery")
 
@@ -136,6 +145,7 @@ async def run() -> int:
     report_path = ROOT / "docs" / "reports" / "incidents" / f"incident-{report.incident_id[:8]}.md"
     print(f"PHASE 6: incident report {report_path.name} — outcome: {report.outcome}")
     print(f"Detection-to-action latency: {action_latency_ms:.1f} ms (target < 2000 ms)")
+    engine.dispose()
     return 0 if action_executed and action_latency_ms < 2000 else 1
 
 

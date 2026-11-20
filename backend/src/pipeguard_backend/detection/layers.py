@@ -89,36 +89,46 @@ class MLAnomalyLayer:
             return _clip(raw / 0.6)
         if len(history) >= 10:
             matrix = np.asarray([self._vector(h["features"]) for h in history[-100:]], dtype=float)
-            mean = np.mean(matrix, axis=0)
-            std = np.maximum(np.std(matrix, axis=0), 0.05)
-            deviation = float(np.mean(np.abs((np.asarray(vector) - mean) / std)))
+            history_mean = np.mean(matrix, axis=0)
+            history_std = np.maximum(np.std(matrix, axis=0), 0.05)
+            deviation = float(np.mean(np.abs((np.asarray(vector) - history_mean) / history_std)))
             return _clip(deviation / 4.0)
         values = [
-            ("velocity", features.velocity_rms_mm_s, 3.0),
-            ("kurtosis", features.kurtosis, 6.0),
-            ("crest", features.crest_factor, 6.0),
+            ("velocity", self._field(features, "velocity_rms_mm_s"), 3.0),
+            ("kurtosis", self._field(features, "kurtosis"), 6.0),
+            ("crest", self._field(features, "crest_factor"), 6.0),
         ]
         scores: list[float] = []
         for name, value, divisor in values:
             if baseline and baseline.get(f"{name}_std", 0) > 0.02:
-                mean = float(baseline[f"{name}_mean"])
-                std = max(float(baseline[f"{name}_std"]), 0.05)
-                scores.append(abs(float(value) - mean) / (std * 3.0))
+                baseline_mean = float(baseline[f"{name}_mean"])
+                baseline_std = max(float(baseline[f"{name}_std"]), 0.05)
+                scores.append(abs(float(value) - baseline_mean) / (baseline_std * 3.0))
             else:
                 scores.append(abs(float(value)) / divisor)
         return _clip(float(np.mean(scores)))
 
     @staticmethod
-    def _vector(features: Any) -> list[float]:
+    def _field(features: Any, name: str) -> float:
+        """Read a scalar feature from a model or its serialized history dict."""
+        value = features.get(name) if isinstance(features, dict) else getattr(features, name)
+        return float(value) if value is not None else 0.0
+
+    @classmethod
+    def _vector(cls, features: Any) -> list[float]:
         """Convert features into the ML input vector."""
-        bands = features.band_energies
+        bands = (
+            features.get("band_energies", {})
+            if isinstance(features, dict)
+            else features.band_energies
+        )
         return [
-            float(features.velocity_rms_mm_s),
-            float(features.kurtosis),
-            float(features.crest_factor),
+            cls._field(features, "velocity_rms_mm_s"),
+            cls._field(features, "kurtosis"),
+            cls._field(features, "crest_factor"),
             float(bands.get("10_50", 0.0)),
             float(bands.get("50_150", 0.0)),
             float(bands.get("150_500", 0.0)),
             float(bands.get("500_2000", 0.0)),
-            float(features.peak_mps2),
+            cls._field(features, "peak_mps2"),
         ]

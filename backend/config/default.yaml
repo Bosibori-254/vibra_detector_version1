@@ -29,17 +29,17 @@ detection:
     n_of_m: 3
     window: 5
   hysteresis:
-    enter: 0.45
-    clear: 0.3
+    enter: 0.30
+    clear: 0.22
   severity_levels:
     warning: 0.55
     critical: 0.8
   persistence_s: 1.5
   band_reference:
-    10_50: 0.18
-    50_150: 0.22
-    150_500: 0.30
-    500_2000: 0.30
+    "10_50": 0.18
+    "50_150": 0.22
+    "150_500": 0.30
+    "500_2000": 0.30
   natural_frequencies_hz:
     - 187.0
   state_buckets:
