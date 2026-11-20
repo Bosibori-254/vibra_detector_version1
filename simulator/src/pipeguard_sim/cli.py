@@ -52,7 +52,10 @@ def _publish_mqtt(config: SimulatorConfig, args: argparse.Namespace) -> None:
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise SystemExit("paho-mqtt is required for --mqtt (pip install paho-mqtt)") from exc
 
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"sim-{config.node_id}")
+    client = mqtt.Client(
+        mqtt.CallbackAPIVersion.VERSION2,  # type: ignore[attr-defined]
+        client_id=f"sim-{config.node_id}",
+    )
     if args.key:
         client.username_pw_set(config.node_id, args.key)
     client.connect(args.broker, args.port, keepalive=60)

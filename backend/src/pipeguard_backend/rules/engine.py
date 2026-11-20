@@ -132,7 +132,7 @@ class RuleEngine:
     @staticmethod
     def _target_value(spec: Any, current: float, confidence: float) -> float:
         """Compute a bounded target from the configured direction and max step."""
-        delta = min(spec.step_per_severity * confidence, spec.max_step)
+        delta = float(min(spec.step_per_severity * confidence, spec.max_step))
         if spec.direction == "increase":
             return current + delta
         if spec.direction == "shift" and spec.skip_bands_hz:

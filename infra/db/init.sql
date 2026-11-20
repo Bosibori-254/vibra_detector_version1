@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS feature_samples (
     operating_state JSONB NOT NULL,
     features JSONB NOT NULL,
     health JSONB NOT NULL,
+    PRIMARY KEY (id, ts),
     CONSTRAINT uq_node_sequence UNIQUE (node_id, sequence)
 );
 SELECT create_hypertable('feature_samples', 'ts', if_not_exists => TRUE);
@@ -37,7 +38,8 @@ CREATE TABLE IF NOT EXISTS detections (
     score DOUBLE PRECISION NOT NULL,
     severity TEXT NOT NULL,
     layer_scores JSONB NOT NULL,
-    state_key TEXT NOT NULL DEFAULT ''
+    state_key TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (id, ts)
 );
 SELECT create_hypertable('detections', 'ts', if_not_exists => TRUE);
 
@@ -50,7 +52,8 @@ CREATE TABLE IF NOT EXISTS diagnoses (
     confidence DOUBLE PRECISION NOT NULL,
     evidence JSONB NOT NULL,
     severity TEXT NOT NULL,
-    all_scores JSONB NOT NULL
+    all_scores JSONB NOT NULL,
+    PRIMARY KEY (id, ts)
 );
 SELECT create_hypertable('diagnoses', 'ts', if_not_exists => TRUE);
 
@@ -73,7 +76,7 @@ CREATE TABLE IF NOT EXISTS alarms (
 );
 
 CREATE TABLE IF NOT EXISTS actions_audit (
-    id TEXT PRIMARY KEY,
+    id TEXT NOT NULL,
     ts TIMESTAMPTZ NOT NULL,
     node_id TEXT NOT NULL,
     segment TEXT NOT NULL,
@@ -87,7 +90,8 @@ CREATE TABLE IF NOT EXISTS actions_audit (
     reason TEXT NOT NULL,
     operator TEXT NOT NULL DEFAULT 'system',
     gate_results JSONB NOT NULL,
-    rollback_of TEXT
+    rollback_of TEXT,
+    PRIMARY KEY (id, ts)
 );
 SELECT create_hypertable('actions_audit', 'ts', if_not_exists => TRUE);
 

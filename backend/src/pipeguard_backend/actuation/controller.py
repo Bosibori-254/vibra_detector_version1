@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pipeguard_backend.actuation.adapters import DeviceRegistry, WriteOutcome
@@ -16,7 +16,7 @@ from pipeguard_backend.schemas import ActionAudit, ActionCommand, ActionResult
 
 def _now() -> str:
     """Return an ISO UTC timestamp."""
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 class ActuationController:

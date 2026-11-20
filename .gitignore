@@ -10,6 +10,7 @@ venv/
 htmlcov/
 dist/
 *.egg-info/
+*.tsbuildinfo
 
 # Rust
 target/
@@ -28,6 +29,9 @@ dist/
 
 # Docker / runtime data
 infra/data/
+docs/reports/incidents/incident-*.json
+docs/reports/incidents/incident-*.md
+docs/reports/incidents/incident-*.pdf
 *.log
 
 # Editors / OS

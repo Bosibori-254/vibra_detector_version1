@@ -89,7 +89,7 @@ def _unit_band_noise(
     sos = sp_signal.butter(4, [lower, upper], btype="bandpass", fs=sample_rate_hz, output="sos")
     noise = sp_signal.sosfiltfilt(sos, rng.standard_normal(n))
     std = float(np.std(noise))
-    return noise / std if std > 1e-12 else noise
+    return np.asarray(noise / std if std > 1e-12 else noise, dtype=np.float64)
 
 
 def generate_signal(
@@ -107,7 +107,7 @@ def generate_signal(
     state = operating_state or OperatingState()
     cfg = params or SignalParams()
     rng = np.random.default_rng(cfg.seed)
-    n = max(int(round(duration_s * sample_rate_hz)), 64)
+    n = max(round(duration_s * sample_rate_hz), 64)
     t = np.arange(n, dtype=np.float64) / float(sample_rate_hz)
     run_hz = max(state.pump_speed_rpm, 1.0) / 60.0
     phase = rng.uniform(0.0, 2.0 * np.pi)
@@ -161,7 +161,7 @@ def generate_signal(
         )
 
     elif cfg.fault is FaultType.LOOSE_SUPPORT:
-        impact_period = 0.11
+        impact_period = 0.18
         impact_times = np.arange(0.05, duration_s, impact_period)
         for impact in impact_times:
             jitter = rng.normal(0.0, 0.006)
@@ -169,7 +169,7 @@ def generate_signal(
             if 0 <= idx < n:
                 decay_len = min(int(0.06 * sample_rate_hz), n - idx)
                 k = np.arange(decay_len) / float(sample_rate_hz)
-                strike = 3.2 * cfg.severity * np.exp(-k / 0.022)
+                strike = 12.0 * cfg.severity * np.exp(-k / 0.006)
                 strike *= np.sin(2.0 * np.pi * 27.0 * k)
                 xyz[idx : idx + decay_len, 2] += strike
                 xyz[idx : idx + decay_len, 0] += 0.3 * strike
@@ -184,7 +184,7 @@ def generate_signal(
         if np.max(np.abs(dig_bursts)) > 0:
             dig_bursts /= float(np.max(np.abs(dig_bursts)))
         leak = 1.1 * cfg.severity * (broadband + 0.6 * np.abs(dig_bursts))
-        delay = int(round(cfg.arrival_delay_s * sample_rate_hz))
+        delay = round(cfg.arrival_delay_s * sample_rate_hz)
         if delay > 0:
             leak = np.concatenate((np.zeros(delay), leak))[:n]
         xyz[:, 2] += leak

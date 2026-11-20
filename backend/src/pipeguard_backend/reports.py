@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +16,7 @@ DEFAULT_REPORT_DIR = Path(__file__).resolve().parents[3] / "docs" / "reports" / 
 
 def _now() -> str:
     """Return a UTC ISO timestamp."""
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 class IncidentReporter:
@@ -50,14 +50,15 @@ class IncidentReporter:
             for a in alarms
         ]
         timeline.sort(key=lambda item: item["ts"])
-        outcome = "in progress"
-        for action in actions:
-            if action["result"] == "verified":
-                outcome = "vibration recovered after bounded action"
-            elif action["result"] in {"rolled_back", "failed"}:
-                outcome = "action rolled back; escalated to operator"
-            elif action["result"] == "recommended":
-                outcome = "advisory recommendation issued"
+        results = {action["result"] for action in actions}
+        if results & {"rolled_back", "failed"}:
+            outcome = "action rolled back; escalated to operator"
+        elif "verified" in results:
+            outcome = "vibration recovered after bounded action"
+        elif "recommended" in results:
+            outcome = "advisory recommendation issued"
+        else:
+            outcome = "in progress"
         incident = IncidentRecord(
             incident_id=str(uuid.uuid4()),
             created_at=_now(),

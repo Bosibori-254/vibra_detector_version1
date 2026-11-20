@@ -60,6 +60,7 @@ fn main() -> Result<(), String> {
                 pump_speed_rpm: 2950.0,
                 valve_position_pct: 100.0,
             },
+            features,
             health: NodeHealth {
                 battery_pct: 87.2,
                 temp_c: 41.5,

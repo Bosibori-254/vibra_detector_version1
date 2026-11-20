@@ -27,7 +27,12 @@ CAUSES = [
 
 def _build_simulator(cause: Cause, config: Config) -> Any:
     """Create a simulator whose fault starts after a normal warm-up period."""
-    from pipeguard_sim.scenario import FaultWindow, PipelineSimulator, SimulatorConfig, build_schedule
+    from pipeguard_sim.scenario import (
+        FaultWindow,
+        PipelineSimulator,
+        SimulatorConfig,
+        build_schedule,
+    )
 
     fault_map = {
         Cause.NORMAL: "normal",
@@ -40,7 +45,7 @@ def _build_simulator(cause: Cause, config: Config) -> Any:
     }
     schedule = build_schedule(fault_map[cause])
     if cause is not Cause.NORMAL:
-        schedule = tuple(
+        schedule = (
             FaultWindow(0.0),
             *[FaultWindow(w.start_s + 3.0, w.fault, w.severity) for w in schedule[1:]],
         )
@@ -65,25 +70,28 @@ async def _run_cause(cause: Cause, config: Config) -> tuple[list[Cause], list[Ca
 
     expected: list[Cause] = []
     predicted: list[Cause] = []
-    for step in simulator.run():
-        message: FeatureMessage | None = await ingest.handle_feature(
-            "pipeguard/gulf-north/seg-12/node-03/features",
-            json.dumps(step.message).encode("utf-8"),
-        )
-        if message is None:
-            continue
-        detection = detector.evaluate(message)
-        if detection.severity is not Severity.NORMAL:
-            diagnosis = classifier.diagnose(
-                message,
-                detection,
-                list(repository.recent_features(message.node_id, 40)),
-                detector.baselines.get(message.node_id, detection.state_key),
+    try:
+        for step in simulator.run():
+            message: FeatureMessage | None = await ingest.handle_topic(
+                "pipeguard/gulf-north/seg-12/node-03/features",
+                json.dumps(step.message).encode("utf-8"),
             )
-            if step.fault.value != "normal":
-                expected.append(Cause(step.fault.value))
-                predicted.append(diagnosis.cause)
-    return expected, predicted
+            if message is None:
+                continue
+            detection = detector.evaluate(message)
+            if detection.severity is not Severity.NORMAL:
+                diagnosis = classifier.diagnose(
+                    message,
+                    detection,
+                    list(repository.recent_features(message.node_id, 40)),
+                    detector.baselines.get(message.node_id, detection.state_key),
+                )
+                if step.fault.value != "normal":
+                    expected.append(Cause(step.fault.value))
+                    predicted.append(diagnosis.cause)
+        return expected, predicted
+    finally:
+        engine.dispose()
 
 
 def evaluate(output_dir: Path, config: Config | None = None) -> dict[str, Any]:

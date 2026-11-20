@@ -70,7 +70,7 @@ impl SensorTrait for SimulatedSensor {
         let run = 49.17f32; // 2950 rpm / 60
         let phase = sin_approx(2.0 * PI * run * t);
         let mut x = 0.26 * phase + 0.32 * self.uniform();
-        let mut y = 0.15 * phase + 0.32 * self.uniform();
+        let y = 0.15 * phase + 0.32 * self.uniform();
         let mut z = 0.48 * phase + 0.21 * sin_approx(4.0 * PI * run * t) + 0.32 * self.uniform();
 
         match self.fault {

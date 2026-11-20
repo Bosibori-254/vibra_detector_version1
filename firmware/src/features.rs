@@ -86,6 +86,9 @@ pub struct NodeHealth {
     pub drift_ppm: f32,
 }
 
+/// Signature prefix shared with the Python simulator and backend.
+pub const SIGNATURE_PREFIX: &str = "hmac-sha256=";
+
 /// Complete signed telemetry message.
 #[derive(Clone, Debug, Serialize)]
 pub struct FeatureMessage {
@@ -125,7 +128,7 @@ pub fn extract_features(frames: &[SensorFrame], config: &FeatureConfig) -> Featu
     let bands = [(10.0, 50.0), (50.0, 150.0), (150.0, 500.0), (500.0, 2000.0)];
     let band_energies = dsp::band_energies(&z, config.sample_rate_hz, &bands)
         .into_iter()
-        .map(|(low, high, energy)| (format!("{low:g}_{high:g}"), energy))
+        .map(|(low, high, energy)| (format!("{low}_{high}").replace('.', "p"), energy))
         .collect();
     let peaks = dsp::top_peaks(&z, config.sample_rate_hz, config.top_n_peaks)
         .into_iter()
@@ -155,7 +158,7 @@ impl FeatureMessage {
         let mut mac = Hmac::<Sha256>::new_from_slice(key.as_bytes())
             .map_err(|_| "invalid HMAC key".to_string())?;
         mac.update(canonical.as_bytes());
-        let signature = hex::encode(mac.finalize().into_bytes());
+        let signature = format!("{}{}", SIGNATURE_PREFIX, hex::encode(mac.finalize().into_bytes()));
         let mut signed = value;
         if let Some(object) = signed.as_object_mut() {
             object.insert("signature".to_string(), serde_json::Value::String(signature));
@@ -215,7 +218,7 @@ mod tests {
         let a = message.signed_json("secret").unwrap();
         let b = message.signed_json("secret").unwrap();
         assert_eq!(a, b);
-        assert!(!a.contains("hmac"));
+        assert!(a.contains("hmac-sha256="));
         assert!(a.contains("\"signature\""));
     }
 }

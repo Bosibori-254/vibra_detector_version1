@@ -14,6 +14,7 @@ from sqlalchemy.pool import StaticPool
 from pipeguard_backend.db.models import (
     ActionRow,
     AlarmRow,
+    Base,
     BaselineRow,
     DetectionRow,
     DiagnosisRow,
@@ -22,7 +23,10 @@ from pipeguard_backend.db.models import (
 )
 from pipeguard_backend.schemas import (
     ActionAudit,
+    ActionMode,
+    ActionResult,
     AlarmRecord,
+    Cause,
     DetectionResult,
     Diagnosis,
     FeatureMessage,
@@ -37,6 +41,9 @@ def create_database(url: str) -> tuple[Engine, sessionmaker[Session]]:
         engine = create_engine(
             url, connect_args={"check_same_thread": False}, poolclass=StaticPool
         )
+        # In-memory/file SQLite are used by tests, the demo and local runs.
+        # Production PostgreSQL tables are created by infra/db/init.sql.
+        Base.metadata.create_all(engine)
     else:
         engine = create_engine(url, pool_pre_ping=True)
     return engine, sessionmaker(bind=engine, expire_on_commit=False)
@@ -175,26 +182,24 @@ class Repository:
                 setattr(row, field, value.value if hasattr(value, "value") else value)
             session.commit()
 
+    @staticmethod
+    def _alarm_from_row(row: AlarmRow) -> AlarmRecord:
+        """Map a persisted alarm row to its Pydantic record."""
+        values = {c.name: getattr(row, c.name) for c in AlarmRow.__table__.columns}
+        values["alarm_id"] = values.pop("id")
+        return AlarmRecord.model_validate(values)
+
     def get_alarm(self, alarm_id: str) -> AlarmRecord | None:
         """Read an alarm by ID."""
         with self.session_factory() as session:
             row = session.get(AlarmRow, alarm_id)
-            return AlarmRecord.model_validate(
-                {
-                    **{c.name: getattr(row, c.name) for c in AlarmRow.__table__.columns},
-                }
-            ) if row else None
+            return self._alarm_from_row(row) if row else None
 
     def list_alarms(self, limit: int = 100) -> list[AlarmRecord]:
         """List alarms, newest first."""
         with self.session_factory() as session:
             rows = session.query(AlarmRow).order_by(AlarmRow.created_at.desc()).limit(limit).all()
-            return [
-                AlarmRecord.model_validate(
-                    {c.name: getattr(row, c.name) for c in AlarmRow.__table__.columns}
-                )
-                for row in rows
-            ]
+            return [self._alarm_from_row(row) for row in rows]
 
     def list_diagnoses(self, limit: int = 50) -> list[dict[str, Any]]:
         """List recent diagnosis rows as dictionaries."""
@@ -248,13 +253,13 @@ class Repository:
                     timestamp=row.ts,
                     node_id=row.node_id,
                     segment=row.segment,
-                    cause=row.cause,
-                    mode=row.mode,
+                    cause=Cause(row.cause),
+                    mode=ActionMode(row.mode),
                     action_type=row.action_type,
                     target=row.target,
                     before=row.before,
                     after=row.after,
-                    result=row.result,
+                    result=ActionResult(row.result),
                     reason=row.reason,
                     operator=row.operator,
                     gate_results=[GateResult(**g) for g in row.gate_results],

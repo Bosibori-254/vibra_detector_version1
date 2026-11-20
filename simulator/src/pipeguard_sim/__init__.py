@@ -2,23 +2,23 @@
 
 from pipeguard_sim.dsp import (
     FeatureConfig,
-    FFTPeak,
     Features,
+    FFTPeak,
     extract_features,
 )
 from pipeguard_sim.signals import (
     FaultType,
     OperatingState,
+    SensorFaultMode,
     SignalParams,
     SignalResult,
-    SensorFaultMode,
     generate_signal,
 )
 
 __all__ = [
+    "FFTPeak",
     "FaultType",
     "FeatureConfig",
-    "FFTPeak",
     "Features",
     "OperatingState",
     "SensorFaultMode",
