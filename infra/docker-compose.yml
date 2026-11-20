@@ -1,0 +1,89 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: pipeguard-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+    command: >
+      sh -c "mosquitto_passwd -c -b /mosquitto/config/passwd node-03 device-secret &&
+             mosquitto_passwd -b /mosquitto/config/passwd node-04 device-secret-2 &&
+             mosquitto_passwd -b /mosquitto/config/passwd backend backend-secret &&
+             exec mosquitto -c /mosquitto/config/mosquitto.conf"
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: pipeguard-db
+    environment:
+      POSTGRES_DB: pipeguard
+      POSTGRES_USER: pipeguard
+      POSTGRES_PASSWORD: pipeguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - db-data:/var/lib/postgresql/data
+
+  plc-sim:
+    build:
+      context: ..
+      dockerfile: infra/plcsim.Dockerfile
+    container_name: pipeguard-plc-sim
+    ports:
+      - "4840:4840"
+      - "5020:5020"
+
+  backend:
+    build:
+      context: ..
+      dockerfile: infra/backend.Dockerfile
+    container_name: pipeguard-backend
+    environment:
+      PIPEGUARD_DATABASE_URL: postgresql+psycopg://pipeguard:pipeguard@timescaledb:5432/pipeguard
+      PIPEGUARD_MQTT: "1"
+      PIPEGUARD_MQTT_USER: backend
+      PIPEGUARD_MQTT_PASSWORD: backend-secret
+      MQTT_BROKER: mosquitto
+      PIPEGUARD_JWT_SECRET: pipeguard-demo-secret
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../docs/reports:/app/docs/reports
+    depends_on:
+      - mosquitto
+      - timescaledb
+      - plc-sim
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: infra/dashboard.Dockerfile
+    container_name: pipeguard-dashboard
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+  simulator:
+    build:
+      context: ..
+      dockerfile: infra/simulator.Dockerfile
+    container_name: pipeguard-simulator
+    command: ["--scenario", "all", "--duration", "60", "--mqtt", "--broker", "mosquitto", "--pace"]
+    depends_on:
+      - mosquitto
+      - backend
+
+  firmware-test:
+    build:
+      context: ../firmware
+      dockerfile: Dockerfile
+      target: builder
+    container_name: pipeguard-firmware-test
+    command: ["cargo", "test", "--release"]
+
+volumes:
+  db-data:
+  mosquitto-data:
