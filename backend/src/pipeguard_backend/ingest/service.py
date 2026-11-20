@@ -131,7 +131,17 @@ class MqttBridge:
         if self.username:
             client.username_pw_set(self.username, self.password)
         client.on_message = self.on_message
-        client.connect(self.broker, self.port, keepalive=60)
+        last_error: OSError | None = None
+        for attempt in range(10):
+            try:
+                client.connect(self.broker, self.port, keepalive=60)
+                last_error = None
+                break
+            except OSError as exc:
+                last_error = exc
+                time.sleep(0.5)
+        if last_error is not None:
+            raise last_error
         client.subscribe(self.topic_prefix, qos=1)
         client.loop_start()
         self.client = client

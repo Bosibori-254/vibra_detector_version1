@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from conftest import KEY, signed_message
 from pipeguard_sim.messages import make_status_message, sign_message
 
 from pipeguard_backend.config import Config
 from pipeguard_backend.db.repository import Repository
-from pipeguard_backend.ingest.service import IngestService
+from pipeguard_backend.ingest.service import IngestService, MqttBridge
 from pipeguard_backend.schemas import FeatureMessage
 
 TOPIC = "pipeguard/gulf-north/seg-12/node-03/features"
@@ -60,3 +61,49 @@ async def test_status_message_updates_node_presence(repository: Repository, conf
     )
     assert await service.handle_topic("pipeguard/status", json.dumps(status).encode()) is None
     assert service.node_online("node-03")
+
+
+def test_mqtt_bridge_retries_transient_connection(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A broker that is not yet listening does not abort backend startup."""
+
+    class FakeClient:
+        attempts = 0
+        subscribed = False
+
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            """Paho constructor stand-in."""
+
+        def username_pw_set(self, username: str, password: str) -> None:
+            """Credential stand-in."""
+
+        def connect(self, broker: str, port: int, keepalive: int = 60) -> None:
+            """Fail once, then connect."""
+            type(self).attempts += 1
+            if self.attempts == 1:
+                raise OSError("broker not ready")
+
+        def subscribe(self, topic: str, qos: int = 0) -> None:
+            """Record subscription."""
+            type(self).subscribed = True
+
+        def loop_start(self) -> None:
+            """Network-loop stand-in."""
+
+        def loop_stop(self) -> None:
+            """Network-loop stand-in."""
+
+        def disconnect(self) -> None:
+            """Disconnect stand-in."""
+
+    monkeypatch.setattr("paho.mqtt.client.Client", FakeClient)
+    monkeypatch.setattr("pipeguard_backend.ingest.service.time.sleep", lambda _: None)
+
+    async def handler(topic: str, payload: bytes) -> None:
+        """No-op message handler."""
+
+    bridge = MqttBridge(None, broker="broker", handler=handler)  # type: ignore[arg-type]
+    bridge.start()
+    assert FakeClient.attempts == 2
+    assert FakeClient.subscribed
+    assert bridge.client is not None
+    bridge.stop()

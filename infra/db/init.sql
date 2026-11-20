@@ -8,17 +8,34 @@ CREATE TABLE IF NOT EXISTS feature_samples (
     segment TEXT NOT NULL,
     node_id TEXT NOT NULL,
     sequence BIGINT NOT NULL,
-    message_id TEXT NOT NULL UNIQUE,
+    message_id TEXT NOT NULL,
     late BOOLEAN NOT NULL DEFAULT FALSE,
     drift_corrected BOOLEAN NOT NULL DEFAULT FALSE,
     operating_state JSONB NOT NULL,
     features JSONB NOT NULL,
     health JSONB NOT NULL,
     PRIMARY KEY (id, ts),
-    CONSTRAINT uq_node_sequence UNIQUE (node_id, sequence)
+    CONSTRAINT uq_message_id UNIQUE (message_id, ts),
+    CONSTRAINT uq_node_sequence UNIQUE (node_id, sequence, ts)
 );
 SELECT create_hypertable('feature_samples', 'ts', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS idx_feature_node_ts ON feature_samples (node_id, ts DESC);
+
+CREATE TABLE IF NOT EXISTS raw_waveforms (
+    id BIGSERIAL,
+    ts TIMESTAMPTZ NOT NULL DEFAULT now(),
+    node_id TEXT NOT NULL,
+    sequence BIGINT NOT NULL,
+    t0 TEXT NOT NULL,
+    sample_rate_hz INT NOT NULL,
+    axis TEXT NOT NULL,
+    samples_mg JSONB NOT NULL,
+    trigger_reason TEXT NOT NULL,
+    PRIMARY KEY (id, ts),
+    CONSTRAINT uq_raw_node_sequence UNIQUE (node_id, sequence, ts)
+);
+SELECT create_hypertable('raw_waveforms', 'ts', if_not_exists => TRUE);
+CREATE INDEX IF NOT EXISTS idx_raw_node_ts ON raw_waveforms (node_id, ts DESC);
 
 CREATE TABLE IF NOT EXISTS baselines (
     id BIGSERIAL PRIMARY KEY,
@@ -105,7 +122,16 @@ CREATE TABLE IF NOT EXISTS incidents (
     payload JSONB NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS node_config (
+    segment TEXT NOT NULL,
+    version INT NOT NULL,
+    applied_at TEXT NOT NULL,
+    config JSONB NOT NULL,
+    PRIMARY KEY (segment, version)
+);
+
 -- Retention policies (configurable; conservative defaults).
 SELECT add_retention_policy('feature_samples', INTERVAL '90 days', if_not_exists => TRUE);
+SELECT add_retention_policy('raw_waveforms', INTERVAL '30 days', if_not_exists => TRUE);
 SELECT add_retention_policy('actions_audit', INTERVAL '2 years', if_not_exists => TRUE);
 SELECT add_retention_policy('detections', INTERVAL '1 year', if_not_exists => TRUE);

@@ -33,6 +33,7 @@ docs/reports/incidents/incident-*.json
 docs/reports/incidents/incident-*.md
 docs/reports/incidents/incident-*.pdf
 *.log
+features.jsonl
 
 # Editors / OS
 .vscode/

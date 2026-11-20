@@ -11,18 +11,22 @@ from plc_sim.device import REGISTER_MAP, SimulatedPLC
 async def run_modbus_server(device: SimulatedPLC, host: str = "0.0.0.0", port: int = 5020) -> None:
     """Serve device tags as Modbus holding registers until cancelled."""
     try:
-        from pymodbus.datastore import (
-            ModbusSequentialDataBlock,
-            ModbusServerContext,
-            ModbusSlaveContext,
-        )
+        from pymodbus.datastore import ModbusSequentialDataBlock, ModbusServerContext
         from pymodbus.server import StartAsyncTcpServer
+
+        try:
+            from pymodbus.datastore import ModbusSlaveContext as ModbusDeviceContext
+        except ImportError:  # pymodbus >= 3.10 renamed the slave context
+            from pymodbus.datastore import ModbusDeviceContext
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise RuntimeError("pymodbus is required for the Modbus server") from exc
 
     block = ModbusSequentialDataBlock(0, [0] * 500)
-    slave = ModbusSlaveContext(hr=block)
-    context: Any = ModbusServerContext(slaves=slave, single=True)
+    slave = ModbusDeviceContext(hr=block)
+    try:
+        context: Any = ModbusServerContext(slaves=slave, single=True)
+    except TypeError:  # pymodbus >= 3.10 renamed ``slaves`` to ``devices``
+        context = ModbusServerContext(devices=slave, single=True)
     for tag, address in REGISTER_MAP.items():
         block.setValues(address, [int(device.read(tag) * 10)])
 

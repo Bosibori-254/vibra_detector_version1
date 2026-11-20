@@ -301,9 +301,10 @@ sequence numbers and future timestamps beyond a configured skew.
 | `incidents` | regular | timeline + report artifacts | forever |
 | `node_config` | regular | thresholds/policy per segment, version | config history |
 
-Config files in `backend/config/*.yaml` are the source of truth and are loaded at
-startup; DB rows record the effective version used for each decision. **No
-threshold is hardcoded in code.**
+Config files in `backend/config/*.yaml` are the source of truth for operational
+thresholds and are loaded at startup; DB rows record the effective version used
+for each decision. Evidence-ranking heuristics live in the classifier and are
+covered by the offline evaluation report.
 
 ## 6. Detection and diagnosis design
 

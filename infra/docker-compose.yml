@@ -8,10 +8,16 @@ services:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto-data:/mosquitto/data
     command: >
-      sh -c "mosquitto_passwd -c -b /mosquitto/config/passwd node-03 device-secret &&
-             mosquitto_passwd -b /mosquitto/config/passwd node-04 device-secret-2 &&
-             mosquitto_passwd -b /mosquitto/config/passwd backend backend-secret &&
+      sh -c "mosquitto_passwd -c -b /mosquitto/data/passwd node-03 device-secret &&
+             mosquitto_passwd -b /mosquitto/data/passwd node-04 device-secret-2 &&
+             mosquitto_passwd -b /mosquitto/data/passwd backend backend-secret &&
+             chmod 644 /mosquitto/data/passwd &&
              exec mosquitto -c /mosquitto/config/mosquitto.conf"
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -u backend -P backend-secret -t pipeguard/health -m ok"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
 
   timescaledb:
     image: timescale/timescaledb:latest-pg16
@@ -25,6 +31,11 @@ services:
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pipeguard -d pipeguard"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
 
   plc-sim:
     build:
@@ -52,9 +63,12 @@ services:
     volumes:
       - ../docs/reports:/app/docs/reports
     depends_on:
-      - mosquitto
-      - timescaledb
-      - plc-sim
+      mosquitto:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      plc-sim:
+        condition: service_started
 
   dashboard:
     build:
@@ -73,8 +87,10 @@ services:
     container_name: pipeguard-simulator
     command: ["--scenario", "all", "--duration", "60", "--mqtt", "--broker", "mosquitto", "--key", "device-secret", "--pace"]
     depends_on:
-      - mosquitto
-      - backend
+      mosquitto:
+        condition: service_healthy
+      backend:
+        condition: service_started
 
   firmware-test:
     build:

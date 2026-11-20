@@ -58,7 +58,17 @@ def _publish_mqtt(config: SimulatorConfig, args: argparse.Namespace) -> None:
     )
     if args.key:
         client.username_pw_set(config.node_id, args.key)
-    client.connect(args.broker, args.port, keepalive=60)
+    last_error: OSError | None = None
+    for _ in range(10):
+        try:
+            client.connect(args.broker, args.port, keepalive=60)
+            last_error = None
+            break
+        except OSError as exc:
+            last_error = exc
+            time.sleep(0.5)
+    if last_error is not None:
+        raise last_error
     client.loop_start()
     simulator = PipelineSimulator(config)
     client.publish(feature_topic(config.site, config.segment, config.node_id, "status"),
