@@ -199,6 +199,7 @@ class ActionCommand(BaseModel):
     gates: list[GateResult] = Field(default_factory=list)
     verification_timeout_s: int = 0
     min_improvement_pct: float = 0.0
+    baseline_velocity_mm_s: float = 0.0
     protocol: str = "opcua"
 
 

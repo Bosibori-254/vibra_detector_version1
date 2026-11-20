@@ -23,6 +23,7 @@ class SystemConfig(BaseModel):
     auto_segments: list[str] = Field(default_factory=list)
     max_late_seconds: float = 10.0
     max_clock_skew_ms: float = 5000.0
+    max_message_age_s: float = 2.0
     device_keys: dict[str, str] = Field(default_factory=dict)
 
 
